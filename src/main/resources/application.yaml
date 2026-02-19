@@ -1,6 +1,8 @@
 spring:
   application:
     name: github-bot
+  config:
+    import: file:.env[.properties]
 
 telegram:
   bot:

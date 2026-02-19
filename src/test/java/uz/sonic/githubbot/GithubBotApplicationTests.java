@@ -9,7 +9,9 @@ import org.springframework.test.context.TestPropertySource;
         "telegram.bot.token=test-token",
         "telegram.bot.username=test-bot",
         "telegram.chat-id=123456",
-        "github.webhook.secret=test-secret"
+        "telegram.admin-chat-id=789012",
+        "github.webhook.secret=test-secret",
+        "spring.datasource.url=jdbc:h2:mem:testdb"
 })
 class GithubBotApplicationTests {
 

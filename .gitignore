@@ -34,3 +34,6 @@ build/
 
 ### Environment ###
 .env
+
+### H2 Database ###
+data/

@@ -9,5 +9,6 @@ RUN ./mvnw package -DskipTests -B
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+VOLUME /app/data
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -7,5 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record Repository(
         String name,
         @JsonProperty("full_name") String fullName,
-        @JsonProperty("html_url") String htmlUrl
+        @JsonProperty("html_url") String htmlUrl,
+        @JsonProperty("default_branch") String defaultBranch
 ) {}

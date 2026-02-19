@@ -34,6 +34,13 @@ public class GitHubWebhookController {
             return ResponseEntity.ok("Event ignored");
         }
 
+        String branch = pushEvent.ref().replace("refs/heads/", "");
+        String defaultBranch = pushEvent.repository().defaultBranch();
+        if (!branch.equals(defaultBranch)) {
+            log.info("Ignoring push to non-default branch: {}", branch);
+            return ResponseEntity.ok("Non-default branch ignored");
+        }
+
         String message = webhookService.formatPushMessage(pushEvent);
         notificationService.sendMessage(message);
         log.info("Push event processed for {}", pushEvent.repository().fullName());

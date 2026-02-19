@@ -3,12 +3,21 @@ spring:
     name: github-bot
   config:
     import: file:.env[.properties]
+  datasource:
+    url: jdbc:h2:file:./data/github-bot-db
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
 
 telegram:
   bot:
     token: ${TELEGRAM_BOT_TOKEN}
     username: ${TELEGRAM_BOT_USERNAME}
   chat-id: ${TELEGRAM_CHAT_ID}
+  admin-chat-id: ${TELEGRAM_ADMIN_CHAT_ID}
 
 github:
   webhook:

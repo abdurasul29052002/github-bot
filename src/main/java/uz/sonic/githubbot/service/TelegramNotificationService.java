@@ -30,20 +30,20 @@ public class TelegramNotificationService {
         this.repoTopicMappingRepository = repoTopicMappingRepository;
     }
 
-    public void sendMessageToRepo(String repoFullName, String htmlText) {
+    public void sendMessageToRepo(String repoFullName, String text) {
         repoTopicMappingRepository.findByRepoFullName(repoFullName)
                 .ifPresentOrElse(
-                        mapping -> sendMessage(htmlText, mapping.getTopicId()),
+                        mapping -> sendMessage(text, mapping.getTopicId()),
                         () -> log.warn("No topic mapping found for repo: {}", repoFullName)
                 );
     }
 
-    public void sendMessage(String htmlText, Integer messageThreadId) {
+    public void sendMessage(String text, Integer messageThreadId) {
         SendMessage message = SendMessage.builder()
                 .chatId(chatId)
-                .text(htmlText)
+                .text(text)
                 .messageThreadId(messageThreadId)
-                .parseMode("HTML")
+                .parseMode("MarkdownV2")
                 .disableWebPagePreview(true)
                 .build();
         try {

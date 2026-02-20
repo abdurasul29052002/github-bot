@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static uz.sonic.githubbot.util.MarkdownV2Utils.*;
+
 @Service
 public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
 
@@ -117,7 +119,7 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
             }
         } catch (Exception e) {
             log.error("Error handling admin command: {}", text, e);
-            sendReply("Error: " + e.getMessage(), replyTopicId);
+            sendReply(escape("Error: " + e.getMessage()), replyTopicId);
         }
     }
 
@@ -144,11 +146,11 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
             switch (data) {
                 case "add_repo" -> {
                     waitingForRepoName.put(message.getChatId(), true);
-                    editMessage("Repo nomini <code>owner/repo</code> formatida yuboring:", messageId, null);
+                    editMessage("Repo nomini " + code("owner/repo") + " formatida yuboring:", messageId, null);
                 }
                 case "list_repos" -> handleListReposCallback(messageId);
                 case "remove_repo" -> handleRemoveRepoCallback(messageId);
-                case "cancel_remove" -> editMessage("Bekor qilindi.", messageId, buildMainMenu());
+                case "cancel_remove" -> editMessage(escape("Bekor qilindi."), messageId, buildMainMenu());
                 case "main_menu" -> editMessage("Buyruqni tanlang:", messageId, buildMainMenu());
                 default -> {
                     if (data.startsWith("remove:")) {
@@ -166,13 +168,14 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
     private void handleListReposCallback(Integer messageId) {
         List<RepoTopicMapping> mappings = repository.findAll();
         if (mappings.isEmpty()) {
-            editMessage("Hech qanday repo sozlanmagan.", messageId, buildMainMenu());
+            editMessage(escape("Hech qanday repo sozlanmagan."), messageId, buildMainMenu());
             return;
         }
 
-        var sb = new StringBuilder("<b>Sozlangan repolar:</b>\n\n");
+        var sb = new StringBuilder(bold("Sozlangan repolar:")).append("\n\n");
         for (RepoTopicMapping m : mappings) {
-            sb.append("- <code>").append(m.getRepoFullName()).append("</code> (topic ").append(m.getTopicId()).append(")\n");
+            sb.append("\\- ").append(code(m.getRepoFullName()))
+                    .append(escape(" (topic " + m.getTopicId() + ")")).append("\n");
         }
         editMessage(sb.toString(), messageId, buildMainMenu());
     }
@@ -180,7 +183,7 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
     private void handleRemoveRepoCallback(Integer messageId) {
         List<RepoTopicMapping> mappings = repository.findAll();
         if (mappings.isEmpty()) {
-            editMessage("O'chirish uchun repo yo'q.", messageId, buildMainMenu());
+            editMessage(escape("O'chirish uchun repo yo'q."), messageId, buildMainMenu());
             return;
         }
 
@@ -213,13 +216,13 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
                                 .callbackData("cancel_remove")
                                 .build()))
                 .build();
-        editMessage("<b>" + repoName + "</b> ni o'chirishga ishonchingiz komilmi?", messageId, keyboard);
+        editMessage(bold(repoName) + escape(" ni o'chirishga ishonchingiz komilmi?"), messageId, keyboard);
     }
 
     private void handleConfirmedRemove(String repoName, Integer messageId) {
         var mapping = repository.findByRepoFullName(repoName);
         if (mapping.isEmpty()) {
-            editMessage("Repository " + repoName + " topilmadi.", messageId, buildMainMenu());
+            editMessage(escape("Repository " + repoName + " topilmadi."), messageId, buildMainMenu());
             return;
         }
 
@@ -231,7 +234,7 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
             log.warn("Failed to delete forum topic for {}: {}", repoName, e.getMessage());
         }
 
-        editMessage("✅ <b>" + repoName + "</b> o'chirildi.", messageId, buildMainMenu());
+        editMessage("\u2705 " + bold(repoName) + escape(" o'chirildi."), messageId, buildMainMenu());
         log.info("Removed repo mapping: {}", repoName);
     }
 
@@ -239,12 +242,12 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
 
     private void handleAddRepo(String repoFullName, Integer replyTopicId) {
         if (!repoFullName.matches("^[\\w.-]+/[\\w.-]+$")) {
-            sendReply("Noto'g'ri format. <code>owner/repo</code> formatida yuboring.", replyTopicId);
+            sendReply(escape("Noto'g'ri format. ") + code("owner/repo") + escape(" formatida yuboring."), replyTopicId);
             return;
         }
 
         if (repository.existsByRepoFullName(repoFullName)) {
-            sendReply("Repository " + repoFullName + " allaqachon sozlangan.", replyTopicId);
+            sendReply(escape("Repository " + repoFullName + " allaqachon sozlangan."), replyTopicId);
             return;
         }
 
@@ -253,26 +256,27 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
             ForumTopic topic = notificationService.createForumTopic(repoName);
             RepoTopicMapping mapping = new RepoTopicMapping(repoFullName, topic.getMessageThreadId());
             repository.save(mapping);
-            String successMsg = "✅ <b>" + repoFullName + "</b> qo'shildi (topic ID: " + topic.getMessageThreadId() + ")";
+            String successMsg = "\u2705 " + bold(repoFullName) + escape(" qo'shildi (topic ID: " + topic.getMessageThreadId() + ")");
             sendReply(successMsg, replyTopicId);
             sendAdminMessage(successMsg);
             log.info("Added repo mapping: {} -> topic {}", repoFullName, topic.getMessageThreadId());
         } catch (TelegramApiException e) {
             log.error("Failed to create forum topic for {}", repoFullName, e);
-            sendReply("Forum topic yaratishda xato: " + e.getMessage(), replyTopicId);
+            sendReply(escape("Forum topic yaratishda xato: " + e.getMessage()), replyTopicId);
         }
     }
 
     private void handleListRepos(Integer replyTopicId) {
         List<RepoTopicMapping> mappings = repository.findAll();
         if (mappings.isEmpty()) {
-            sendReply("Hech qanday repo sozlanmagan.", replyTopicId);
+            sendReply(escape("Hech qanday repo sozlanmagan."), replyTopicId);
             return;
         }
 
-        var sb = new StringBuilder("<b>Sozlangan repolar:</b>\n\n");
+        var sb = new StringBuilder(bold("Sozlangan repolar:")).append("\n\n");
         for (RepoTopicMapping m : mappings) {
-            sb.append("- <code>").append(m.getRepoFullName()).append("</code> (topic ").append(m.getTopicId()).append(")\n");
+            sb.append("\\- ").append(code(m.getRepoFullName()))
+                    .append(escape(" (topic " + m.getTopicId() + ")")).append("\n");
         }
         sendReply(sb.toString(), replyTopicId);
     }
@@ -280,7 +284,7 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
     private void handleRemoveRepo(String repoFullName, Integer replyTopicId) {
         var mapping = repository.findByRepoFullName(repoFullName);
         if (mapping.isEmpty()) {
-            sendReply("Repository " + repoFullName + " topilmadi.", replyTopicId);
+            sendReply(escape("Repository " + repoFullName + " topilmadi."), replyTopicId);
             return;
         }
 
@@ -292,19 +296,19 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
             log.warn("Failed to delete forum topic for {}: {}", repoFullName, e.getMessage());
         }
 
-        sendReply("✅ <b>" + repoFullName + "</b> o'chirildi.", replyTopicId);
+        sendReply("\u2705 " + bold(repoFullName) + escape(" o'chirildi."), replyTopicId);
         log.info("Removed repo mapping: {}", repoFullName);
     }
 
     private void handleHelp(Integer replyTopicId) {
         String help = """
-                <b>Admin Bot Buyruqlari:</b>
+                *Admin Bot Buyruqlari:*
 
-                /start - Asosiy menyuni ko'rsatish
-                /addrepo owner/repo - Repo qo'shish va forum topic yaratish
-                /repos - Barcha sozlangan repolarni ko'rsatish
-                /removerepo owner/repo - Reponi o'chirish va topicni yo'q qilish
-                /help - Ushbu yordam xabarini ko'rsatish""";
+                /start \\- Asosiy menyuni ko'rsatish
+                /addrepo owner/repo \\- Repo qo'shish va forum topic yaratish
+                /repos \\- Barcha sozlangan repolarni ko'rsatish
+                /removerepo owner/repo \\- Reponi o'chirish va topicni yo'q qilish
+                /help \\- Ushbu yordam xabarini ko'rsatish""";
         sendReply(help, replyTopicId);
     }
 
@@ -313,20 +317,20 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
     private InlineKeyboardMarkup buildMainMenu() {
         return InlineKeyboardMarkup.builder()
                 .keyboardRow(new InlineKeyboardRow(
-                        InlineKeyboardButton.builder().text("📁 Add Repo").callbackData("add_repo").build()))
+                        InlineKeyboardButton.builder().text("\uD83D\uDCC1 Add Repo").callbackData("add_repo").build()))
                 .keyboardRow(new InlineKeyboardRow(
-                        InlineKeyboardButton.builder().text("📋 List Repos").callbackData("list_repos").build()))
+                        InlineKeyboardButton.builder().text("\uD83D\uDCCB List Repos").callbackData("list_repos").build()))
                 .keyboardRow(new InlineKeyboardRow(
-                        InlineKeyboardButton.builder().text("🗑 Remove Repo").callbackData("remove_repo").build()))
+                        InlineKeyboardButton.builder().text("\uD83D\uDDD1 Remove Repo").callbackData("remove_repo").build()))
                 .build();
     }
 
-    private void sendMessageWithKeyboard(String htmlText, InlineKeyboardMarkup keyboard, Integer messageThreadId) {
+    private void sendMessageWithKeyboard(String text, InlineKeyboardMarkup keyboard, Integer messageThreadId) {
         SendMessage message = SendMessage.builder()
                 .chatId(adminChatId)
-                .text(htmlText)
+                .text(text)
                 .messageThreadId(messageThreadId)
-                .parseMode("HTML")
+                .parseMode("MarkdownV2")
                 .replyMarkup(keyboard)
                 .build();
         try {
@@ -336,12 +340,12 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    private void editMessage(String htmlText, Integer messageId, InlineKeyboardMarkup keyboard) {
+    private void editMessage(String text, Integer messageId, InlineKeyboardMarkup keyboard) {
         var builder = EditMessageText.builder()
                 .chatId(adminChatId)
                 .messageId(messageId)
-                .text(htmlText)
-                .parseMode("HTML");
+                .text(text)
+                .parseMode("MarkdownV2");
         if (keyboard != null) {
             builder.replyMarkup(keyboard);
         }
@@ -362,11 +366,11 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    private void sendAdminMessage(String htmlText) {
+    private void sendAdminMessage(String text) {
         SendMessage message = SendMessage.builder()
                 .chatId(adminChatId)
-                .text(htmlText)
-                .parseMode("HTML")
+                .text(text)
+                .parseMode("MarkdownV2")
                 .build();
         try {
             telegramClient.execute(message);
@@ -375,7 +379,7 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    private void sendReply(String htmlText, Integer messageThreadId) {
-        notificationService.sendMessage(htmlText, messageThreadId);
+    private void sendReply(String text, Integer messageThreadId) {
+        notificationService.sendMessage(text, messageThreadId);
     }
 }

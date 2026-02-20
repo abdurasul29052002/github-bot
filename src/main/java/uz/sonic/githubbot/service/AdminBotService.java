@@ -249,10 +249,13 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
         }
 
         try {
-            ForumTopic topic = notificationService.createForumTopic(repoFullName);
+            String repoName = repoFullName.substring(repoFullName.indexOf('/') + 1);
+            ForumTopic topic = notificationService.createForumTopic(repoName);
             RepoTopicMapping mapping = new RepoTopicMapping(repoFullName, topic.getMessageThreadId());
             repository.save(mapping);
-            sendReply("✅ <b>" + repoFullName + "</b> qo'shildi (topic ID: " + topic.getMessageThreadId() + ")", replyTopicId);
+            String successMsg = "✅ <b>" + repoFullName + "</b> qo'shildi (topic ID: " + topic.getMessageThreadId() + ")";
+            sendReply(successMsg, replyTopicId);
+            sendAdminMessage(successMsg);
             log.info("Added repo mapping: {} -> topic {}", repoFullName, topic.getMessageThreadId());
         } catch (TelegramApiException e) {
             log.error("Failed to create forum topic for {}", repoFullName, e);
@@ -356,6 +359,19 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
                     .build());
         } catch (TelegramApiException e) {
             log.error("Failed to answer callback query", e);
+        }
+    }
+
+    private void sendAdminMessage(String htmlText) {
+        SendMessage message = SendMessage.builder()
+                .chatId(adminChatId)
+                .text(htmlText)
+                .parseMode("HTML")
+                .build();
+        try {
+            telegramClient.execute(message);
+        } catch (TelegramApiException e) {
+            log.error("Failed to send admin message", e);
         }
     }
 

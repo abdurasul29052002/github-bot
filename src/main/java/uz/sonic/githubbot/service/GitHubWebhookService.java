@@ -10,6 +10,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.util.List;
 
 import static uz.sonic.githubbot.util.MarkdownV2Utils.*;
 
@@ -75,12 +76,7 @@ public class GitHubWebhookService {
 
             if (!changes.isEmpty()) {
                 sb.append("\n\uD83D\uDCE6 ").append(escape("Changes (" + changes.size() + " commits):")).append("\n");
-                for (Commit commit : changes) {
-                    String shortId = commit.id().substring(0, Math.min(7, commit.id().length()));
-                    String commitFirstLine = commit.message().lines().findFirst().orElse("");
-                    sb.append("\u2022 ").append(code(shortId)).append(" \\- ")
-                            .append(escape(commitFirstLine)).append("\n");
-                }
+                appendCommitList(sb, changes);
             }
         } else {
             // Regular push format
@@ -90,16 +86,28 @@ public class GitHubWebhookService {
             sb.append("\uD83D\uDC64 Pushed by: ").append(bold(pusherName)).append("\n");
             sb.append("\uD83D\uDCE6 Commits: ").append(commitCount).append("\n\n");
 
-            for (Commit commit : event.commits()) {
-                String shortId = commit.id().substring(0, Math.min(7, commit.id().length()));
-                String firstLine = commit.message().lines().findFirst().orElse("");
-                sb.append("\u2022 ").append(code(shortId)).append(" \\- ")
-                        .append(escape(firstLine)).append("\n");
-            }
+            appendCommitList(sb, event.commits());
         }
 
         sb.append("\n\uD83D\uDD17 ").append(link("View Changes", event.compare()));
         return sb.toString();
+    }
+
+    private static final int MAX_COMMITS = 10;
+
+    private void appendCommitList(StringBuilder sb, List<Commit> commits) {
+        int shown = Math.min(commits.size(), MAX_COMMITS);
+        for (int i = 0; i < shown; i++) {
+            Commit commit = commits.get(i);
+            String shortId = commit.id().substring(0, Math.min(7, commit.id().length()));
+            String firstLine = commit.message().lines().findFirst().orElse("");
+            sb.append("\u2022 ").append(code(shortId)).append(" \\- ")
+                    .append(escape(firstLine)).append("\n");
+        }
+        int remaining = commits.size() - shown;
+        if (remaining > 0) {
+            sb.append(escape("... va yana " + remaining + " ta commit")).append("\n");
+        }
     }
 
     private String extractExtendedDescription(String message) {

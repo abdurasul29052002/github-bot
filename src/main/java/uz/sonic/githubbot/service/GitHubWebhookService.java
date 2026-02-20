@@ -59,7 +59,7 @@ public class GitHubWebhookService {
                     .append(HtmlUtils.htmlEscape(firstLine)).append("\n");
         }
 
-        sb.append("\n\uD83D\uDD17 <a href=\"").append(event.compare()).append("\">View Changes</a>");
+        sb.append("\n\uD83D\uDD17 <a href=\"").append(HtmlUtils.htmlEscape(event.compare())).append("\">View Changes</a>");
         return sb.toString();
     }
 }

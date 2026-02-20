@@ -139,13 +139,14 @@ public class AdminBotService implements LongPollingSingleThreadUpdateConsumer {
             return;
         }
 
+        repository.deleteByRepoFullName(repoFullName);
+
         try {
             notificationService.deleteForumTopic(mapping.get().getTopicId());
         } catch (TelegramApiException e) {
             log.warn("Failed to delete forum topic for {}: {}", repoFullName, e.getMessage());
         }
 
-        repository.deleteByRepoFullName(repoFullName);
         sendReply("Removed " + repoFullName, replyTopicId);
         log.info("Removed repo mapping: {}", repoFullName);
     }

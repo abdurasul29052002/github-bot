@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface RepoTopicMappingRepository extends JpaRepository<RepoTopicMapping, Long> {
 
-    Optional<RepoTopicMapping> findByRepoFullName(String repoFullName); //comment
+    Optional<RepoTopicMapping> findByRepoFullName(String repoFullName);
 
     boolean existsByRepoFullName(String repoFullName);
 

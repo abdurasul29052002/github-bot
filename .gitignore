@@ -37,3 +37,4 @@ build/
 
 ### H2 Database ###
 data/
+.claude

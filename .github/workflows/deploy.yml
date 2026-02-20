@@ -1,4 +1,4 @@
-name: Build & Deploy
+name: GitHub Bot CI/CD
 
 on:
   push:
@@ -9,37 +9,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '25'
-          distribution: 'temurin'
-          cache: maven
+
+      - name: Set executable permission for Maven wrapper
+        run: chmod +x ./mvnw
 
       - name: Build JAR
         run: |
-          ./mvnw package -DskipTests -B
+          ./mvnw clean package -DskipTests -B
           cp target/*.jar target/app.jar
 
-      - name: Copy JAR to server
-        uses: appleboy/scp-action@v0.1.7
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.5.3
         with:
-          host: 185.217.131.88
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: target/app.jar
-          target: /root/sonic-projects/github-bot/
-          strip_components: 1
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Copy JAR to server
+        run: |
+          scp -o StrictHostKeyChecking=no target/app.jar root@185.217.131.88:/root/sonic-projects/github-bot/app.jar
 
       - name: Restart container
-        uses: appleboy/ssh-action@v1
-        with:
-          host: 185.217.131.88
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
+        run: |
+          ssh -o StrictHostKeyChecking=no root@185.217.131.88 << 'EOF'
             cd /root/sonic-projects/github-bot
             docker compose down
             docker compose up -d
+          EOF

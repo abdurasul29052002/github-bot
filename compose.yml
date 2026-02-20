@@ -1,0 +1,16 @@
+services:
+  github-bot:
+    image: eclipse-temurin:25-jre
+    working_dir: /app
+    command: ["java", "-jar", "app.jar"]
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./app.jar:/app/app.jar:ro
+      - bot-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  bot-data:

@@ -19,7 +19,9 @@ jobs:
           cache: maven
 
       - name: Build JAR
-        run: ./mvnw package -DskipTests -B
+        run: |
+          ./mvnw package -DskipTests -B
+          cp target/*.jar target/app.jar
 
       - name: Copy JAR to server
         uses: appleboy/scp-action@v0.1.7
@@ -27,7 +29,7 @@ jobs:
           host: 185.217.131.88
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: target/*.jar
+          source: target/app.jar
           target: /root/sonic-projects/github-bot/
           strip_components: 1
 
